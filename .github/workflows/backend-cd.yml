@@ -1,5 +1,5 @@
 name: CD - Deploy Backend Services to AKS
-  
+
 on:
   workflow_dispatch:
     inputs:
@@ -26,6 +26,11 @@ jobs:
       ORDER_API_IP: ${{ steps.get_order_ip.outputs.external_ip }}
 
     steps:
+      - name: Debug: list ACRs in this subscription
+        run: |
+          az acr list -o table
+          az acr show -n ${{ github.event.inputs.aks_acr_name }} -o table || true
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
