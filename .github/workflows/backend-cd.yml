@@ -26,11 +26,6 @@ jobs:
       ORDER_API_IP: ${{ steps.get_order_ip.outputs.external_ip }}
 
     steps:
-      - name: Debug: list ACRs in this subscription
-        run: |
-          az acr list -o table
-          az acr show -n ${{ github.event.inputs.aks_acr_name }} -o table || true
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -39,6 +34,10 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           enable-AzPSSession: true
+      - name: Debug list ACRs in this subscription
+        run: |
+          az acr list -o table
+          az acr show -n ${{ github.event.inputs.aks_acr_name }} -o table || true
 
       - name: Set Kubernetes context (get AKS credentials)
         run: |
