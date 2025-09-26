@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from .db import Base, engine, get_db
 from .models import Order, OrderItem
 from .schemas import OrderCreate, OrderItemResponse, OrderResponse, OrderUpdate
- 
+
 # --- Standard Logging Configuration ---
 logging.basicConfig(
     level=logging.INFO,
