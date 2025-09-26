@@ -39,14 +39,46 @@ on:
         required: true
         type: string
 
+  # auto-run after Backend CD finishes successfully
+  workflow_run:
+    workflows: ["Backend CD"]
+    types: [completed]
+
+# prevent overlapping front-end deploys on the same ref
+concurrency:
+  group: frontend-cd-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy_frontend:
     runs-on: ubuntu-latest
     environment: Production
+    # Only proceed on workflow_run if Backend CD concluded successfully
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # If triggered by Backend CD (workflow_run), resolve backend IPs from AKS automatically.
+      # Uses repository/environment variables AKS_RG / AKS_CLUSTER if present.
+      - name: Resolve backend IPs when triggered by Backend CD
+        if: ${{ github.event_name == 'workflow_run' }}
+        run: |
+          echo "Resolving backend service IPs from AKS..."
+          az login --identity >/dev/null 2>&1 || true
+          az aks get-credentials \
+            --resource-group "${{ vars.AKS_RG }}" \
+            --name "${{ vars.AKS_CLUSTER }}" \
+            --overwrite-existing
+
+          PRODUCT_IP=$(kubectl get svc product-service-w08e1 -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+          ORDER_IP=$(kubectl get svc order-service-w08e1   -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+
+          echo "PRODUCT_IP=$PRODUCT_IP" >> $GITHUB_ENV
+          echo "ORDER_IP=$ORDER_IP"     >> $GITHUB_ENV
+          echo "Resolved Product IP: $PRODUCT_IP"
+          echo "Resolved Order IP:   $ORDER_IP"
 
       # Azure login using a Service Principal secret
       - name: Azure Login
@@ -61,14 +93,17 @@ jobs:
       - name: Inject Backend IPs into Frontend main.js
         run: |
           echo "Injecting IPs into frontend/static/js/main.js"
-          # Ensure frontend/main.js is directly in the path for sed
-          sed -i "s|_PRODUCT_API_URL_|${{ inputs.product_api_ip }}|g" frontend/main.js
-          sed -i "s|_ORDER_API_URL_|${{ inputs.order_api_ip }}|g" frontend/main.js
+          PRODUCT_URL="${{ inputs.product_api_ip }}"
+          ORDER_URL="${{ inputs.order_api_ip }}"
+          if [ -z "$PRODUCT_URL" ]; then PRODUCT_URL="${PRODUCT_IP}"; fi
+          if [ -z "$ORDER_URL" ]; then ORDER_URL="${ORDER_IP}"; fi
+
+          sed -i "s|_PRODUCT_API_URL_|${PRODUCT_URL}|g" frontend/main.js
+          sed -i "s|_ORDER_API_URL_|${ORDER_URL}|g"   frontend/main.js
           
-          # Display the modified file content for debugging
           echo "--- Modified main.js content ---"
           cat frontend/main.js
-          echo "---------------------------------"
+          echo "--------------------------------"
 
       # Build and Push Docker image for Frontend
       - name: Build and Push Frontend Image
@@ -86,7 +121,6 @@ jobs:
         run: |
           echo "Deploying frontend with latest tag to AKS cluster: ${{ inputs.aks_cluster_name }}"
           cd k8s/
-          # Ensure frontend-service.yaml is configured with your ACR
           kubectl apply -f frontend.yaml
 
       - name: Logout from Azure (AKS deployment)

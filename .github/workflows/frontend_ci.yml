@@ -14,6 +14,20 @@ on:
       - 'frontend/**'
       - '.github/workflows/frontend_ci.yml' # Trigger if this workflow file changes
 
+  # run CI on PRs to development and main
+  pull_request:
+    branches:
+      - development
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend_ci.yml' # Trigger if this workflow file changes
+
+# prevent duplicate/stale runs on the same branch
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 # Define global environment variables that can be used across jobs
 env:
   # ACR Login Server (e.g., myregistry.azurecr.io)

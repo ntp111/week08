@@ -1,4 +1,4 @@
-name: CD - Deploy Backend Services to AKS
+name: Backend CD
 
 on:
   workflow_dispatch:
@@ -15,6 +15,11 @@ on:
         description: 'Name of ACR'
         required: true
         default: '224005289acr'
+
+# avoid overlapping deploys on the same ref
+concurrency:
+  group: backend-cd-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy_backend:
