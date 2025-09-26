@@ -23,7 +23,7 @@ on:
         description: 'Resource Group of the AKS Cluster'
         required: true
         default: 'sit722devops224005289-rg'
-
+ 
   workflow_call:
     inputs:
       product_api_ip:
