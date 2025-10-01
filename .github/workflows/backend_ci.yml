@@ -1,5 +1,5 @@
 # week08/.github/workflows/backend_ci.yml
-# test
+# test 
 name: Backend CI - Test, Build and Push Images to ACR
 
 # Trigger the workflow on pushes to the 'main' branch
@@ -129,16 +129,34 @@ jobs:
       run: az acr login --name ${{ env.ACR_LOGIN_SERVER }}
 
     # Build and Push Docker image for Product Service
-    - name: Build and Push Product Service Image
+    - name: Build Product Service Image
       run: |
         docker build -t ${{ env.ACR_LOGIN_SERVER }}/product_service:latest ./backend/product_service/
+
+    - name: Docker Scout CVEs (Product) – fail on critical
+      run: |
+        docker scout cves ${{ env.ACR_LOGIN_SERVER }}/product_service:latest \
+          --only-severities critical --exit-code 1
+
+    - name: Push Product Service Image
+      run: |
         docker push ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
 
+
     # Build and Push Docker image for Order Service
-    - name: Build and Push Order Service Image
+    - name: Build Order Service Image
       run: |
         docker build -t ${{ env.ACR_LOGIN_SERVER }}/order_service:latest ./backend/order_service/
+
+    - name: Docker Scout CVEs (Order) – fail on critical
+      run: |
+        docker scout cves ${{ env.ACR_LOGIN_SERVER }}/order_service:latest \
+          --only-severities critical --exit-code 1
+
+    - name: Push Order Service Image
+      run: |
         docker push ${{ env.ACR_LOGIN_SERVER }}/order_service:latest
+
 
     # Logout from Azure for security (runs even if image push fails)
     - name: Logout from Azure
