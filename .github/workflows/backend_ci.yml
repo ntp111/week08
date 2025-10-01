@@ -1,5 +1,5 @@
 # week08/.github/workflows/backend_ci.yml
-# test
+# test 
 name: Backend CI - Test, Build and Push Images to ACR
 
 # Trigger the workflow on pushes to the 'main' branch
@@ -15,20 +15,6 @@ on:
     paths: # Only trigger if changes are in backend directories
       - 'backend/**'
       - '.github/workflows/backend_ci.yml' # Trigger if this workflow file changes
-
-  # run CI on PRs to development and main
-  pull_request:
-    branches:
-      - development
-      - main
-    paths:
-      - 'backend/**'
-      - '.github/workflows/backend_ci.yml' # Trigger if this workflow file changes
-
-# prevent duplicate/stale runs on the same branch
-concurrency:
-  group: backend-ci-${{ github.ref }}
-  cancel-in-progress: true
 
 # Define global environment variables that can be used across jobs
 env:
