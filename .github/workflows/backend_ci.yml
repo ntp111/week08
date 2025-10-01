@@ -130,7 +130,7 @@ jobs:
 
     - name: Install latest Docker Scout
       run: curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh
-      
+
     # Build and Push Docker image for Product Service
     - name: Build Product Service Image
       run: |
@@ -138,8 +138,8 @@ jobs:
 
     - name: Docker Scout CVEs (Product) – fail on critical
       run: |
-        docker scout cves ${{ env.ACR_LOGIN_SERVER }}/product_service:latest \
-          --only-severities critical --exit-code 1
+        docker scout cves local://${{ env.ACR_LOGIN_SERVER }}/product_service:latest \
+          --only-severity critical --exit-code
 
     - name: Push Product Service Image
       run: |
@@ -153,8 +153,8 @@ jobs:
 
     - name: Docker Scout CVEs (Order) – fail on critical
       run: |
-        docker scout cves ${{ env.ACR_LOGIN_SERVER }}/order_service:latest \
-          --only-severities critical --exit-code 1
+        docker scout cves local://${{ env.ACR_LOGIN_SERVER }}/order_service:latest \
+          --only-severity critical --exit-code
 
     - name: Push Order Service Image
       run: |
